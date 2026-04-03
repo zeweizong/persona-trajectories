@@ -1,1 +1,704 @@
-<!DOCTYPE html><html><head><meta charset="UTF-8"><title>test</title></head><body>placeholder</body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Financial Persona – Bank Balance Trajectories</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --card: #181b24;
+    --border: #2a2d38;
+    --text: #e4e6eb;
+    --muted: #8b8fa3;
+    --accent-red: #f44336;
+    --accent-orange: #ff9800;
+    --accent-blue: #42a5f5;
+    --accent-green: #66bb6a;
+    --accent-purple: #ab47bc;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 32px 48px;
+  }
+  h1 { font-size: 28px; font-weight: 700; margin-bottom: 6px; }
+  .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 32px; line-height: 1.6; }
+  .summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 40px;
+    font-size: 14px;
+  }
+  .summary-table th {
+    text-align: left;
+    padding: 10px 16px;
+    border-bottom: 2px solid var(--border);
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .summary-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .summary-table tr:hover { background: rgba(255,255,255,0.03); }
+  .dot {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+    vertical-align: middle;
+  }
+  .persona-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 28px;
+  }
+  .persona-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 4px;
+  }
+  .persona-title { font-size: 20px; font-weight: 600; }
+  .persona-badge {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 600;
+  }
+  .persona-desc {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .chart-and-table {
+    display: flex;
+    gap: 20px;
+    align-items: stretch;
+  }
+  .chart-container {
+    position: relative;
+    height: 340px;
+    flex: 1;
+    min-width: 0;
+  }
+  .cashout-panel {
+    width: 280px;
+    flex-shrink: 0;
+    background: #22252f;
+    border-radius: 8px;
+    padding: 14px;
+    overflow-y: auto;
+    max-height: 340px;
+    font-size: 12px;
+  }
+  .cashout-panel h4 {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .cashout-user-group {
+    margin-bottom: 10px;
+  }
+  .cashout-user-label {
+    font-weight: 600;
+    margin-bottom: 3px;
+  }
+  .cashout-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+    color: var(--muted);
+  }
+  .cashout-row .amt {
+    color: var(--text);
+    font-weight: 500;
+  }
+  .cashout-none { color: #555; font-style: italic; }
+  .zero-line-note {
+    color: var(--muted);
+    font-size: 11px;
+    margin-top: 6px;
+  }
+  .cycle-note {
+    color: #555;
+    font-size: 11px;
+    margin-top: 4px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Financial Persona – Bank Balance Trajectories</h1>
+<p class="subtitle">
+  25 real users sampled from 5 financial personas. Each chart shows the pay period where the user's cash flow <strong>most clearly matches</strong> their persona pattern (not necessarily the most recent cycle). Cashout events are marked on the chart as triangles and detailed in the side panel.
+</p>
+
+<table class="summary-table">
+  <thead>
+    <tr>
+      <th>Persona</th>
+      <th>Sample Count (1/32)</th>
+      <th>Estimated Full Count</th>
+      <th>% of Classified</th>
+      <th>Profile</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="dot" style="background:var(--accent-red)"></span>In the Red</td>
+      <td>15,895</td><td>~509,000</td><td>32.6%</td>
+      <td>Frequently negative balance; overdrafts in 3+ pay periods</td>
+    </tr>
+    <tr>
+      <td><span class="dot" style="background:var(--accent-orange)"></span>Tightrope Walkers</td>
+      <td>7,112</td><td>~228,000</td><td>14.6%</td>
+      <td>Median balance near $0–$150; rely heavily on cashouts</td>
+    </tr>
+    <tr>
+      <td><span class="dot" style="background:var(--accent-blue)"></span>Roller Coasters</td>
+      <td>6,322</td><td>~202,000</td><td>13.0%</td>
+      <td>Wild swings (σ > $300), dip below $200, rarely go negative</td>
+    </tr>
+    <tr>
+      <td><span class="dot" style="background:var(--accent-purple)"></span>Payday Surfers</td>
+      <td>4,253</td><td>~136,000</td><td>8.7%</td>
+      <td>Balance peaks after payday then steadily drains near $0</td>
+    </tr>
+    <tr>
+      <td><span class="dot" style="background:var(--accent-green)"></span>Steady Savers</td>
+      <td>3,621</td><td>~116,000</td><td>7.4%</td>
+      <td>Min balance stays above $200 across nearly all pay periods</td>
+    </tr>
+    <tr>
+      <td><span class="dot" style="background:var(--border)"></span>Unclassified</td>
+      <td>11,585</td><td>~371,000</td><td>23.7%</td>
+      <td>Does not clearly match any single pattern</td>
+    </tr>
+  </tbody>
+</table>
+
+<div id="charts"></div>
+
+<script>
+const personaConfig = [
+  {
+    key: 'In the Red', color: '#f44336',
+    badge: 'background:rgba(244,67,54,0.15);color:#f44336',
+    desc: 'Balance goes negative for multiple consecutive days. These users start cycles near zero, overdraft regularly, and struggle to recover. The selected pay period below shows the cycle where negative-balance days were most prominent.'
+  },
+  {
+    key: 'Tightrope Walkers', color: '#ff9800',
+    badge: 'background:rgba(255,152,0,0.15);color:#ff9800',
+    desc: 'Median daily balance hovers between -$50 and $150. These users live paycheck to paycheck, using cashouts frequently to stay afloat. The cycle shown is one where the median balance was tightest and cashouts were used.'
+  },
+  {
+    key: 'Roller Coasters', color: '#42a5f5',
+    badge: 'background:rgba(66,165,245,0.15);color:#42a5f5',
+    desc: 'Dramatic balance swings within each cycle — standard deviation exceeds $300 with dips below $200. They may receive a large deposit then spend it down quickly. The cycle shown exhibits the clearest volatile-dip pattern.'
+  },
+  {
+    key: 'Payday Surfers', color: '#ab47bc',
+    badge: 'background:rgba(171,71,188,0.15);color:#ab47bc',
+    desc: 'Balance peaks after payday (often >$500) then drains steadily toward near-$0 by end of cycle. The selected cycle most clearly shows this spend-down trajectory.'
+  },
+  {
+    key: 'Steady Savers', color: '#66bb6a',
+    badge: 'background:rgba(102,187,106,0.15);color:#66bb6a',
+    desc: 'Minimum balance stays above $200 throughout the cycle with relatively low volatility. The pay period below is one where this healthy cushion was maintained.'
+  }
+];
+
+const cycleDates = {
+  '6794742':  '2025-12-24 to 2026-02-02',
+  '16607207': '2025-12-10 to 2026-01-15',
+  '18465964': '2026-02-20 to 2026-03-31',
+  '19625047': '2026-01-27 to 2026-03-17',
+  '23351200': '2026-01-20 to 2026-02-27',
+  '4460571':  '2026-01-22 to 2026-03-05',
+  '5817841':  '2025-12-17 to 2026-01-21',
+  '22745903': '2025-12-31 to 2026-02-06',
+  '23798138': '2026-02-09 to 2026-04-01',
+  '24483337': '2025-12-10 to 2026-02-02',
+  '18285242': '2026-01-06 to 2026-02-17',
+  '18871945': '2025-11-07 to 2025-12-08',
+  '21487298': '2026-02-13 to 2026-03-30',
+  '22859221': '2025-11-26 to 2025-12-30',
+  '24221265': '2025-12-17 to 2026-01-21',
+  '6992522':  '2025-12-24 to 2026-01-28',
+  '15638370': '2025-12-17 to 2026-01-21',
+  '18606435': '2025-12-17 to 2026-01-21',
+  '21506322': '2025-12-22 to 2026-01-26',
+  '23313132': '2026-02-04 to 2026-03-13',
+  '17826424': '2025-12-24 to 2026-01-28',
+  '22457972': '2025-12-17 to 2026-01-21',
+  '22648799': '2025-12-17 to 2026-01-21',
+  '23312811': '2026-02-13 to 2026-04-01',
+  '23972205': '2025-12-22 to 2026-01-26'
+};
+
+const rawData = {
+  'In the Red': {
+    '6794742': [[0,-154.22],[1,-154.22],[2,-154.22],[3,-154.22],[4,-154.22],[5,-154.22],[6,-154.22],[7,-154.22],[8,-154.22],[9,-154.22],[10,-154.22],[11,13.38],[12,13.38],[13,13.38],[14,10.38],[15,6.65],[16,6.65],[17,53.41],[18,53.41],[19,53.41],[20,53.41],[21,13.41],[22,-75.14],[23,-92.14],[24,-97.14],[25,-116.64],[26,-116.64],[27,-116.64],[28,-116.64],[29,-116.64],[30,-116.64],[31,-116.64],[32,-116.64],[33,-116.64],[34,-116.64],[35,-116.64],[36,-116.64],[37,-116.64],[38,-116.64],[39,233.04],[40,233.04]],
+    '16607207': [[0,-191.39],[1,43.3],[2,20.48],[3,2039.9],[4,1687.65],[5,1164.99],[6,-23.95],[7,111.24],[8,93.87],[9,8.13],[10,70.54],[11,-19.04],[12,40.18],[13,-34.74],[14,101.9],[15,3.68],[16,-238.83],[17,188.65],[18,42.62],[19,6.66],[20,54.01],[21,153.97],[22,51.82],[23,-2.54],[24,97.0],[25,316.86],[26,132.23],[27,20.1],[28,19.69],[29,20.93],[30,510.98],[31,475.25],[32,137.4],[33,132.4],[34,65.64],[35,2.86],[36,1070.14]],
+    '18465964': [[0,-16.92],[1,-23.43],[2,-25.93],[3,-25.93],[4,-29.18],[5,-32.43],[6,-32.43],[7,-32.43],[8,910.78],[9,1853.99],[10,1853.99],[11,1421.56],[12,985.24],[13,867.97],[14,675.63],[15,595.19],[16,593.75],[17,593.75],[18,542.99],[19,459.14],[20,422.75],[21,307.53],[22,197.72],[23,199.84],[24,199.84],[25,188.45],[26,131.44],[27,202.26],[28,264.31],[29,237.65],[30,265.39],[31,265.39],[32,120.48],[33,131.62],[34,133.33],[35,216.48],[36,638.47],[37,996.75],[38,996.75],[39,898.17]],
+    '19625047': [[0,252.33],[1,229.15],[2,229.15],[3,206.6],[4,196.73],[5,174.67],[6,174.67],[7,174.67],[8,198.52],[9,192.27],[10,135.0],[11,129.76],[12,105.27],[13,105.27],[14,105.27],[15,43.63],[16,19.73],[17,18.11],[18,11.32],[19,4.53],[20,4.53],[21,4.53],[22,4.53],[23,-6.73],[24,-5.8],[25,-9.29],[26,18.93],[27,18.93],[28,18.93],[29,1.8],[30,31.54],[31,61.27],[32,35.42],[33,388.6],[34,388.6],[35,388.6],[36,169.0],[37,151.01],[38,126.3],[39,76.82],[40,18.86],[41,18.86],[42,18.86],[43,7.79],[44,1.24],[45,-0.38],[46,45.95],[47,-12.63],[48,-12.63]],
+    '23351200': [[0,64.01],[1,64.01],[2,33.39],[3,222.49],[4,59.56],[5,10.0],[6,10.0],[7,10.0],[8,0.57],[9,66.54],[10,190.64],[11,-54.26],[12,6263.51],[13,6263.51],[14,6263.51],[15,1411.84],[16,1305.5],[17,1392.84],[18,12.34],[19,59.6],[20,59.6],[21,59.6],[22,383.33],[23,785.61],[24,599.73],[25,9.2],[26,1.46],[27,1.46],[28,1.46],[29,1.46],[30,1.46],[31,83.54],[32,-9.0],[33,88.74],[34,88.74],[35,88.74],[36,-74.52],[37,5.55],[38,-3.19]]
+  },
+  'Tightrope Walkers': {
+    '23312811': [[0,184.38],[1,825.76],[2,825.76],[3,825.76],[4,825.76],[5,516.41],[6,289.95],[7,6.03],[8,6.03],[9,6.03],[10,6.03],[11,38.01],[12,11.17],[13,11.17],[14,11.17],[15,8.47],[16,703.96],[17,703.96],[18,4.56],[19,4.56],[20,4.56],[21,65.84],[23,-57.14],[24,-57.14],[25,-57.14],[26,338.19],[27,5.08],[28,25.08],[29,0.75],[30,0.75],[31,0.75],[32,568.53],[33,189.55],[34,2.45],[35,2.45],[36,2.45],[37,2.45],[38,2.45],[39,31.98],[40,12.64],[41,2.91],[42,0.21],[43,0.21],[44,0.21],[45,0.21],[46,0.21],[47,33.88]],
+    '22648799': [[0,1692.54],[1,1423.39],[2,1142.43],[3,870.09],[4,816.17],[5,534.69],[6,345.86],[7,269.62],[8,188.68],[9,233.73],[10,298.31],[11,296.41],[12,285.59],[13,108.04],[14,118.05],[15,41.36],[16,18.63],[17,171.7],[18,317.41],[19,249.41],[20,184.63],[21,88.75],[22,70.85],[23,56.22],[24,41.08],[25,13.44],[26,20.69],[27,13.09],[28,-6.55],[29,-2.18],[30,7.1],[31,22.31],[32,7.77],[33,3.21],[34,-110.62],[35,1217.04]],
+    '22457972': [[0,61.96],[1,674.56],[2,905.27],[3,152.58],[4,172.73],[5,172.73],[6,177.36],[7,135.17],[8,78.05],[9,67.74],[10,65.55],[11,63.36],[12,63.36],[13,57.24],[14,51.11],[15,248.65],[16,446.18],[17,356.26],[18,266.35],[19,266.35],[20,171.38],[21,53.46],[22,27.22],[23,23.94],[24,22.28],[25,20.61],[26,20.61],[27,1.11],[28,-18.39],[29,-18.39],[30,-9.93],[31,-1.47],[32,-1.47],[33,-1.47],[34,-1.47],[35,-1.47]],
+    '17826424': [[0,63.5],[1,-77.55],[2,-77.55],[3,-9.58],[4,58.39],[5,58.39],[6,58.58],[7,392.18],[8,-132.55],[9,-132.55],[10,558.81],[11,558.81],[12,558.81],[13,85.84],[14,66.62],[15,81.23],[16,39.49],[17,2.58],[18,2.58],[19,2.58],[20,-26.23],[21,-38.31],[22,-85.9],[23,676.27],[24,56.06],[25,56.06],[26,56.06],[27,56.06],[28,-48.59],[29,-50.55],[30,-14.0],[31,-95.13],[32,-95.13],[33,-95.13],[34,-31.12],[35,-6.44]],
+    '23972205': [[0,-36.21],[1,0],[2,0],[3,100],[4,100],[5,0],[6,0],[7,0],[8,0],[9,0],[10,250],[11,250],[12,0],[13,0],[14,0],[15,0],[16,25],[17,0],[18,0],[19,0],[20,0],[21,0],[22,25],[23,20],[24,0],[25,0],[26,0],[27,0],[28,0],[29,0],[30,0],[31,0],[32,0],[33,60],[34,60],[35,60]]
+  },
+  'Roller Coasters': {
+    '18285242': [[0,539.9],[1,101.24],[2,26.24],[3,26.24],[4,26.24],[5,251.24],[6,251.24],[7,126.24],[8,286.24],[9,241.24],[10,88.09],[11,208.09],[12,208.09],[13,3088.46],[14,2656.64],[15,571.85],[16,499.82],[17,325.36],[18,226.4],[19,24.3],[20,24.3],[21,315.32],[22,315.32],[23,86.58],[24,77.99],[25,77.99],[26,4359.55],[27,3675.19],[28,575.75],[29,349.49],[30,922.43],[31,947.44],[32,700.82],[33,197.14],[34,71.98],[35,2834.24],[37,1817.0],[38,492.0],[39,279.0],[40,3185.47],[41,3010.47],[42,1573.77]],
+    '22859221': [[0,2767.4],[1,2672.33],[2,2148.38],[3,2009.96],[4,1929.87],[5,1925.01],[6,1891.02],[7,1551.42],[8,1046.8],[9,864.47],[10,841.47],[11,748.19],[12,735.19],[13,701.63],[14,695.42],[15,653.32],[16,544.26],[17,477.63],[18,325.08],[19,187.18],[20,66.09],[21,3866.87],[22,2859.32],[23,2634.68],[24,2347.15],[25,1821.03],[26,1551.87],[27,1551.87],[28,1502.17],[29,1398.25],[30,1136.4],[31,1121.39],[32,905.65],[33,905.65],[34,830.65]],
+    '21487298': [[0,91.06],[1,29.08],[3,29.08],[5,29.08],[6,322.02],[7,205.55],[8,142.54],[10,85.86],[11,169.09],[12,2927.51],[13,4566.58],[14,2274.14],[15,1770.28],[17,1580.69],[18,1088.06],[19,1035.17],[20,765.27],[21,945.66],[22,1030.43],[24,857.58],[25,793.14],[26,747.9],[27,714.61],[28,579.12],[29,547.23],[31,395.76],[32,327.68],[33,345.66],[34,345.66],[35,223.28],[36,161.97],[38,80.14],[39,365.28],[40,49.06],[41,14.75],[42,7.79],[43,7.79],[45,7.79]],
+    '24221265': [[0,143.28],[1,1029.41],[2,985.1],[3,1022.89],[4,985.2],[5,894.53],[6,890.1],[7,842.6],[8,504.28],[9,504.28],[10,581.49],[11,482.59],[12,409.52],[13,327.03],[14,332.24],[15,1005.34],[16,944.09],[17,1503.23],[18,126.51],[19,146.51],[20,26.23],[21,57.38],[22,64.07],[23,0.0],[24,0.0],[25,108.87],[26,106.53],[27,138.75],[28,82.34],[29,125.11],[30,88.96],[31,3.36],[32,103.36],[33,29.99],[34,17.44],[35,0.83]],
+    '18871945': [[0,24.67],[1,10.02],[2,2.05],[3,1059.05],[4,974.05],[5,217.99],[6,335.78],[7,502.73],[8,443.28],[9,394.06],[10,613.45],[11,568.27],[12,762.94],[13,494.88],[14,246.69],[15,184.64],[16,244.13],[17,326.74],[18,277.65],[19,156.01],[20,197.62],[21,151.88],[22,21.46],[23,-0.08],[24,17.63],[25,21.42],[26,48.43],[27,35.47],[28,35.47],[29,28.02],[30,28.02],[31,1180.03]]
+  },
+  'Payday Surfers': {
+    '4460571': [[0,83.2],[1,2.8],[2,135.27],[3,135.27],[4,135.27],[5,36.02],[6,34.22],[7,34.22],[8,356.34],[9,334.35],[10,334.35],[11,334.35],[12,170.49],[13,43.2],[14,19.78],[15,4.78],[16,1077.13],[17,1077.13],[18,1077.13],[19,135.22],[20,208.49],[21,178.77],[22,156.98],[23,208.52],[24,208.52],[25,208.52],[26,208.52],[27,163.01],[28,118.85],[29,93.85],[30,656.67],[31,656.67],[32,656.67],[33,367.08],[34,306.36],[35,306.36],[36,86.34],[37,26.94],[38,114.16],[39,114.16],[40,10.89],[41,-5.22],[42,63.91]],
+    '5817841': [[0,-200.18],[1,220.74],[2,204.35],[3,1369.06],[4,1369.06],[5,1369.06],[6,754.72],[7,192.47],[8,135.58],[9,135.58],[10,7.5],[11,7.5],[12,7.5],[13,0.5],[14,0.5],[15,0.5],[16,0.5],[17,942.68],[18,942.68],[19,942.68],[20,-138.31],[21,-172.31],[22,-172.31],[23,-172.31],[24,-172.31],[25,-172.31],[26,-172.31],[27,-172.31],[28,-170.24],[29,-170.24],[30,-170.24],[31,332.38],[32,332.38],[33,332.38],[34,332.38],[35,-218.91]],
+    '22745903': [[0,111.31],[1,39.82],[2,59.03],[3,74.31],[4,35.9],[5,13.7],[6,16.66],[7,35.66],[8,36.29],[9,596.37],[10,436.77],[11,133.02],[12,173.14],[13,173.58],[14,61.17],[15,21.4],[16,61.81],[17,58.75],[18,63.22],[19,30.62],[20,20.54],[21,48.54],[22,57.9],[23,46.44],[24,55.45],[25,67.26],[26,0.04],[27,19.85],[28,83.63],[29,94.69],[30,64.99],[31,65.86],[32,67.11],[33,43.98],[34,200.3],[35,114.43],[36,54.43],[37,23.8]],
+    '23798138': [[0,1125.26],[1,954.52],[2,182.66],[3,182.66],[5,3.16],[7,1.7],[9,2.18],[10,2.18],[12,2.18],[14,2.18],[15,-2.16],[16,9.58],[17,131.47],[19,53.36],[20,86.34],[21,113.42],[23,84.03],[24,26.97],[26,12.17],[27,420.56],[28,322.98],[30,312.2],[31,421.53],[32,202.08],[34,386.4],[35,404.46],[36,42.43],[38,43.28],[39,36.77],[40,154.47],[42,95.38],[43,89.53],[44,47.48],[46,83.72],[47,14.14],[48,123.4],[50,213.46],[51,166.73]],
+    '24483337': [[7,300.25],[8,40.26],[9,0.22],[10,0.22],[11,100.26],[12,300.26],[13,0.26],[14,0.26],[15,0.26],[16,200.26],[17,0.26],[18,0.26],[19,250.26],[20,100.26],[21,25.34],[22,448.5],[23,33.14],[24,-33.86],[26,-92.86],[27,32.5],[28,0.0],[29,0.0],[31,0.0],[33,28.9],[34,42.73],[35,34.73],[36,34.73],[37,34.73],[38,-9.12],[39,0.03],[41,0.03],[42,25.06],[43,0.08],[44,0.08],[45,0.08],[47,0.08],[49,0.08],[51,0.08],[52,1295.08],[54,833.75]]
+  },
+  'Steady Savers': {
+    '23313132': [[0,49204.42],[1,49210.58],[2,49190.42],[3,49388.01],[4,49328.19],[5,49265.92],[6,49219.02],[7,49191.48],[8,49167.07],[9,49381.92],[10,49479.68],[11,49434.83],[12,49370.17],[13,49236.36],[14,49339.11],[15,49329.43],[16,49281.85],[17,49267.58],[18,49248.61],[19,49196.41],[20,49199.59],[21,49137.07],[22,49116.77],[23,49696.64],[24,49643.78],[25,49526.48],[26,49471.61],[27,49408.6],[28,49310.67],[29,49201.98],[30,49280.86],[31,49240.01],[32,49218.58],[33,49186.31],[34,49086.28],[35,49067.32],[36,49096.75],[37,49667.79]],
+    '21506322': [[0,7668.45],[1,7547.04],[2,7373.87],[3,7880.49],[4,8490.62],[5,8430.36],[6,8370.09],[7,8370.09],[8,8124.63],[9,7904.45],[10,8504.54],[11,9079.36],[12,8846.76],[13,8614.16],[14,8614.16],[15,8292.41],[16,7839.67],[17,7671.81],[18,7961.5],[19,8227.03],[20,8165.99],[21,8165.99],[22,7916.74],[23,6601.22],[24,5564.63],[25,5728.71],[26,5771.22],[27,5679.32],[28,5679.32],[29,5679.32],[30,4655.48],[31,3377.14],[32,3894.76],[33,4360.21],[34,4053.55],[35,4053.55]],
+    '6992522': [[0,31903.27],[1,32617.51],[2,32617.51],[3,32748.48],[4,32879.46],[5,32879.46],[6,32614.07],[7,32491.17],[8,32396.95],[9,32396.95],[10,32447.25],[11,32497.55],[12,32497.55],[13,32491.35],[14,32440.44],[15,32432.56],[16,32475.49],[17,32653.97],[18,32653.97],[19,32651.17],[20,32510.6],[21,32490.92],[22,32460.98],[23,32501.89],[24,32496.78],[25,32491.66],[26,32491.66],[27,32491.66],[28,32454.22],[29,32452.65],[30,32494.97],[31,32560.41],[32,32626.19],[33,32622.64],[34,32244.82],[35,32125.84]],
+    '15638370': [[0,1479.69],[1,1780.61],[2,1435.46],[3,2761.92],[4,2761.92],[5,2761.92],[6,1777.01],[7,1668.29],[8,1720.89],[9,1720.89],[10,2036.39],[11,2036.39],[12,2036.39],[13,1773.74],[14,1372.17],[15,1272.12],[16,1172.07],[17,1340.02],[18,1340.02],[19,1340.02],[20,1165.55],[21,1007.96],[22,845.92],[23,590.01],[24,1043.24],[25,1043.24],[26,1043.24],[27,917.06],[28,983.0],[29,786.67],[30,667.8],[31,1256.54],[32,1256.54],[33,1256.54],[34,1256.54],[35,1512.51]],
+    '18606435': [[0,500.84],[1,1471.08],[2,1361.89],[3,1135.29],[4,1135.29],[5,1085.29],[6,989.79],[7,965.79],[8,965.79],[9,1897.46],[10,1726.57],[11,1671.18],[12,1669.19],[13,1601.19],[14,2004.76],[15,1920.24],[16,1920.24],[17,615.22],[18,665.49],[19,740.49],[20,934.66],[21,871.72],[22,375.28],[23,1513.54],[24,1147.57],[25,1188.57],[27,1409.63],[28,1383.13],[29,1758.13],[30,1475.09],[31,1002.42],[32,900.66],[33,887.57],[34,847.65],[35,1501.18]]
+  }
+};
+
+const cashoutData = {
+  'In the Red': {
+    '6794742': [{day:15,amt:100,date:'2026-01-08'}],
+    '16607207': [{day:0,amt:120,date:'2025-12-10'},{day:5,amt:150,date:'2025-12-15'},{day:6,amt:110,date:'2025-12-16'},{day:7,amt:120,date:'2025-12-17'},{day:36,amt:150,date:'2026-01-15'}],
+    '18465964': [{day:21,amt:150,date:'2026-03-13'},{day:22,amt:150,date:'2026-03-14'},{day:23,amt:150,date:'2026-03-15'},{day:24,amt:150,date:'2026-03-16'},{day:33,amt:150,date:'2026-03-25'}],
+    '19625047': [],
+    '23351200': [{day:20,amt:150,date:'2026-02-09'},{day:20,amt:150,date:'2026-02-09'},{day:21,amt:100,date:'2026-02-10'}]
+  },
+  'Tightrope Walkers': {
+    '23312811': [{day:38,amt:60,date:'2026-03-23'},{day:39,amt:20,date:'2026-03-24'},{day:39,amt:20,date:'2026-03-24'}],
+    '22648799': [{day:9,amt:75,date:'2025-12-26'},{day:9,amt:150,date:'2025-12-26'},{day:10,amt:10,date:'2025-12-27'},{day:10,amt:10,date:'2025-12-27'},{day:10,amt:10,date:'2025-12-27'},{day:14,amt:10,date:'2025-12-31'},{day:14,amt:10,date:'2025-12-31'},{day:15,amt:10,date:'2026-01-01'},{day:16,amt:10,date:'2026-01-02'},{day:16,amt:10,date:'2026-01-02'},{day:16,amt:10,date:'2026-01-02'},{day:16,amt:10,date:'2026-01-02'}],
+    '22457972': [{day:2,amt:100,date:'2025-12-19'},{day:5,amt:100,date:'2025-12-22'},{day:6,amt:50,date:'2025-12-23'},{day:6,amt:50,date:'2025-12-23'},{day:11,amt:42,date:'2025-12-28'}],
+    '17826424': [{day:2,amt:30,date:'2025-12-26'},{day:2,amt:90,date:'2025-12-26'},{day:3,amt:60,date:'2025-12-27'},{day:5,amt:30,date:'2025-12-29'},{day:6,amt:30,date:'2025-12-30'},{day:7,amt:30,date:'2025-12-31'},{day:12,amt:90,date:'2026-01-05'},{day:12,amt:50,date:'2026-01-05'},{day:13,amt:30,date:'2026-01-06'},{day:14,amt:30,date:'2026-01-07'},{day:16,amt:30,date:'2026-01-09'},{day:19,amt:30,date:'2026-01-12'},{day:21,amt:60,date:'2026-01-14'},{day:27,amt:60,date:'2026-01-20'}],
+    '23972205': [{day:0,amt:50,date:'2025-12-22'},{day:35,amt:50,date:'2026-01-26'}]
+  },
+  'Roller Coasters': {
+    '18285242': [{day:29,amt:150,date:'2026-02-04'},{day:30,amt:50,date:'2026-02-05'}],
+    '22859221': [],
+    '21487298': [{day:32,amt:150,date:'2026-03-17'},{day:32,amt:150,date:'2026-03-17'}],
+    '24221265': [{day:14,amt:100,date:'2025-12-31'}],
+    '18871945': []
+  },
+  'Payday Surfers': {
+    '4460571': [{day:18,amt:100,date:'2026-02-09'},{day:18,amt:100,date:'2026-02-09'},{day:19,amt:100,date:'2026-02-10'},{day:20,amt:100,date:'2026-02-11'},{day:21,amt:100,date:'2026-02-12'},{day:22,amt:100,date:'2026-02-13'},{day:26,amt:100,date:'2026-02-17'}],
+    '5817841': [{day:1,amt:100,date:'2025-12-18'}],
+    '22745903': [],
+    '23798138': [{day:1,amt:100,date:'2026-02-10'},{day:49,amt:100,date:'2026-03-30'}],
+    '24483337': [{day:26,amt:100,date:'2026-01-05'}]
+  },
+  'Steady Savers': {
+    '23313132': [{day:26,amt:90,date:'2026-03-02'},{day:27,amt:90,date:'2026-03-03'},{day:29,amt:90,date:'2026-03-05'},{day:31,amt:90,date:'2026-03-07'},{day:32,amt:90,date:'2026-03-08'},{day:33,amt:50,date:'2026-03-09'}],
+    '21506322': [{day:1,amt:120,date:'2025-12-23'},{day:4,amt:30,date:'2025-12-26'}],
+    '6992522': [{day:10,amt:50,date:'2026-01-03'}],
+    '15638370': [{day:1,amt:150,date:'2025-12-18'},{day:5,amt:150,date:'2025-12-22'},{day:9,amt:150,date:'2025-12-26'},{day:13,amt:150,date:'2025-12-30'},{day:16,amt:100,date:'2026-01-02'},{day:16,amt:50,date:'2026-01-02'}],
+    '18606435': [{day:17,amt:150,date:'2026-01-03'},{day:17,amt:150,date:'2026-01-03'},{day:19,amt:150,date:'2026-01-05'}]
+  }
+};
+
+const userLabels = {};
+personaConfig.forEach(pc => {
+  const uids = Object.keys(rawData[pc.key]);
+  uids.forEach((uid, i) => { userLabels[uid] = 'User ' + String.fromCharCode(65 + i); });
+});
+
+const lineStyles = [
+  { borderDash: [] },
+  { borderDash: [8, 4] },
+  { borderDash: [2, 3] },
+  { borderDash: [12, 4, 2, 4] },
+  { borderDash: [4, 4] }
+];
+
+const container = document.getElementById('charts');
+
+personaConfig.forEach(pc => {
+  const section = document.createElement('div');
+  section.className = 'persona-section';
+  const users = rawData[pc.key];
+  const cashouts = cashoutData[pc.key];
+  const userIds = Object.keys(users);
+
+  let cashoutHTML = '';
+  userIds.forEach(uid => {
+    const label = userLabels[uid];
+    const uCashouts = cashouts[uid] || [];
+    cashoutHTML += `<div class="cashout-user-group"><div class="cashout-user-label" style="color:${pc.color}">${label}</div>`;
+    if (uCashouts.length === 0) {
+      cashoutHTML += `<div class="cashout-none">No cashouts this cycle</div>`;
+    } else {
+      const grouped = {};
+      uCashouts.forEach(c => {
+        const k = c.date;
+        if (!grouped[k]) grouped[k] = { day: c.day, total: 0, count: 0 };
+        grouped[k].total += c.amt;
+        grouped[k].count++;
+      });
+      Object.entries(grouped).forEach(([date, info]) => {
+        const countStr = info.count > 1 ? ` (${info.count}x)` : '';
+        cashoutHTML += `<div class="cashout-row"><span>Day ${info.day} · ${date}${countStr}</span><span class="amt">$${info.total}</span></div>`;
+      });
+    }
+    cashoutHTML += `<div style="color:#333;font-size:10px;margin-top:1px;">${cycleDates[uid]}</div></div>`;
+  });
+
+  section.innerHTML = `
+    <div class="persona-header">
+      <div class="persona-title"><span class="dot" style="background:${pc.color}"></span>${pc.key}</div>
+      <span class="persona-badge" style="${pc.badge}">${userIds.length} sampled users</span>
+    </div>
+    <p class="persona-desc">${pc.desc}</p>
+    <div class="chart-and-table">
+      <div class="chart-container"><canvas id="chart-${pc.key.replace(/\s/g,'-')}"></canvas></div>
+      <div class="cashout-panel">
+        <h4>Cashouts During Cycle</h4>
+        ${cashoutHTML}
+      </div>
+    </div>
+    <div class="zero-line-note">Dashed gray line = $0 · ▲ triangles = cashout events</div>
+  `;
+  container.appendChild(section);
+
+  const ctx = section.querySelector('canvas').getContext('2d');
+
+  const datasets = userIds.map((uid, i) => {
+    const pts = users[uid];
+    return {
+      label: userLabels[uid],
+      data: pts.map(p => ({ x: p[0], y: p[1] })),
+      borderColor: pc.color,
+      backgroundColor: 'transparent',
+      borderWidth: 2,
+      pointRadius: 0,
+      pointHoverRadius: 4,
+      tension: 0.25,
+      borderDash: lineStyles[i].borderDash
+    };
+  });
+
+  userIds.forEach((uid, i) => {
+    const uCashouts = cashouts[uid] || [];
+    if (uCashouts.length === 0) return;
+    const balMap = {};
+    users[uid].forEach(p => { balMap[p[0]] = p[1]; });
+    const cashPts = [];
+    uCashouts.forEach(c => {
+      let y = balMap[c.day];
+      if (y === undefined) {
+        const keys = Object.keys(balMap).map(Number).sort((a,b)=>a-b);
+        const closest = keys.reduce((prev, curr) => Math.abs(curr - c.day) < Math.abs(prev - c.day) ? curr : prev);
+        y = balMap[closest];
+      }
+      cashPts.push({ x: c.day, y: y });
+    });
+    datasets.push({
+      label: userLabels[uid] + ' cashout',
+      data: cashPts,
+      borderColor: 'transparent',
+      backgroundColor: pc.color,
+      pointStyle: 'triangle',
+      pointRadius: 7,
+      pointHoverRadius: 9,
+      showLine: false,
+      borderDash: lineStyles[i].borderDash
+    });
+  });
+
+  datasets.push({
+    label: '$0 line',
+    data: [{ x: 0, y: 0 }, { x: Math.max(...userIds.flatMap(uid => users[uid].map(p => p[0]))), y: 0 }],
+    borderColor: 'rgba(255,255,255,0.15)',
+    borderDash: [4, 4],
+    borderWidth: 1,
+    pointRadius: 0,
+    pointHoverRadius: 0,
+    tension: 0
+  });
+
+  new Chart(ctx, {
+    type: 'line',
+    data: { datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'nearest', intersect: false },
+      plugins: {
+        legend: {
+          labels: {
+            color: '#8b8fa3', font: { size: 11 }, usePointStyle: true, pointStyle: 'line',
+            filter: item => !item.text.includes('cashout') && item.text !== '$0 line'
+          },
+          onClick: (e, legendItem, legend) => {
+            const chart = legend.chart;
+            const clickedLabel = legendItem.text;
+            chart.data.datasets.forEach((ds, idx) => {
+              if (ds.label === clickedLabel || ds.label === clickedLabel + ' cashout') {
+                const meta = chart.getDatasetMeta(idx);
+                meta.hidden = meta.hidden === null ? true : !meta.hidden;
+              }
+            });
+            chart.update();
+          }
+        },
+        tooltip: {
+          backgroundColor: '#22252f',
+          titleColor: '#e4e6eb',
+          bodyColor: '#e4e6eb',
+          borderColor: '#2a2d38',
+          borderWidth: 1,
+          callbacks: {
+            title: items => `Day ${items[0].parsed.x} of pay period`,
+            label: item => {
+              if (item.dataset.label === '$0 line') return null;
+              const prefix = item.dataset.label.includes('cashout') ? '▲ Cashout — ' : '';
+              return `${prefix}${item.dataset.label.replace(' cashout','')}: $${item.parsed.y.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+            }
+          }
+        }
+      },
+      scales: {
+        x: {
+          type: 'linear',
+          title: { display: true, text: 'Day in Pay Period', color: '#8b8fa3', font: { size: 11 } },
+          ticks: { color: '#8b8fa3', stepSize: 5 },
+          grid: { color: 'rgba(255,255,255,0.04)' }
+        },
+        y: {
+          title: { display: true, text: 'Bank Balance ($)', color: '#8b8fa3', font: { size: 11 } },
+          ticks: { color: '#8b8fa3', callback: v => '$' + v.toLocaleString() },
+          grid: { color: 'rgba(255,255,255,0.04)' }
+        }
+      }
+    }
+  });
+});
+</script>
+
+<div style="margin-top:48px; padding:32px; background:#181b24; border:1px solid #2a2d38; border-radius:12px;">
+  <h2 style="font-size:22px; font-weight:700; margin-bottom:8px;">Month-to-Month Retention by Persona</h2>
+  <p style="color:#8b8fa3; font-size:13px; line-height:1.6; margin-bottom:24px;">
+    Cohort: users classified in <strong style="color:#e4e6eb">January 2026</strong> (active login + valid bank connection + &ge;3 completed cycles). Retention = % who cashed out at least once that month. 1/32 hash sample.
+  </p>
+
+  <div style="display:flex; gap:28px; align-items:flex-start; flex-wrap:wrap;">
+    <div style="flex:1; min-width:420px;">
+      <canvas id="retention-chart" height="280"></canvas>
+    </div>
+    <div style="flex-shrink:0;">
+      <table style="border-collapse:collapse; font-size:13px;">
+        <thead>
+          <tr style="border-bottom:2px solid #2a2d38;">
+            <th style="text-align:left; padding:8px 14px; color:#8b8fa3; font-weight:600; font-size:11px; text-transform:uppercase;">Persona</th>
+            <th style="text-align:right; padding:8px 14px; color:#8b8fa3; font-weight:600; font-size:11px; text-transform:uppercase;">Jan Cohort</th>
+            <th style="text-align:right; padding:8px 14px; color:#8b8fa3; font-weight:600; font-size:11px; text-transform:uppercase;">Feb Ret %</th>
+            <th style="text-align:right; padding:8px 14px; color:#8b8fa3; font-weight:600; font-size:11px; text-transform:uppercase;">Mar Ret %</th>
+            <th style="text-align:right; padding:8px 14px; color:#8b8fa3; font-weight:600; font-size:11px; text-transform:uppercase;">Feb→Mar Δ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid #2a2d38;">
+            <td style="padding:10px 14px;"><span class="dot" style="background:#ff9800"></span>Tightrope Walkers</td>
+            <td style="padding:10px 14px; text-align:right; color:#8b8fa3;">8,084</td>
+            <td style="padding:10px 14px; text-align:right; font-weight:600; color:#66bb6a;">90.4%</td>
+            <td style="padding:10px 14px; text-align:right; font-weight:600; color:#66bb6a;">81.8%</td>
+            <td style="padding:10px 14px; text-align:right; color:#f44336;">-8.6pp</td>
+          </tr>
+          <tr style="border-bottom:1px solid #2a2d38;">
+            <td style="padding:10px 14px;"><span class="dot" style="background:#42a5f5"></span>Roller Coasters</td>
+            <td style="padding:10px 14px; text-align:right; color:#8b8fa3;">5,880</td>
+            <td style="padding:10px 14px; text-align:right; font-weight:600;">76.4%</td>
+            <td style="padding:10px 14px; text-align:right; font-weight:600;">70.9%</td>
+            <td style="padding:10px 14px; text-align:right; color:#f44336;">-5.5pp</td>
+          </tr>
+          <tr style="border-bottom:1px solid #2a2d38;">
+            <td style="padding:10px 14px;"><span class="dot" style="background:#ab47bc"></span>Payday Surfers</td>
+            <td style="padding:10px 14px; text-align:right; color:#8b8fa3;">4,429</td>
+            <td style="padding:10px 14px; text-align:right; font-weight:600;">72.1%</td>
+            <td style="padding:10px 14px; text-align:right; font-weight:600;">65.9%</td>
+            <td style="padding:10px 14px; text-align:right; color:#f44336;">-6.2pp</td>
+          </tr>
+          <tr style="border-bottom:1px solid #2a2d38;">
+            <td style="padding:10px 14px;"><span class="dot" style="background:#66bb6a"></span>Steady Savers</td>
+            <td style="padding:10px 14px; text-align:right; color:#8b8fa3;">3,197</td>
+            <td style="padding:10px 14px; text-align:right; font-weight:600;">68.9%</td>
+            <td style="padding:10px 14px; text-align:right; font-weight:600;">64.3%</td>
+            <td style="padding:10px 14px; text-align:right; color:#f44336;">-4.6pp</td>
+          </tr>
+          <tr style="border-bottom:1px solid #2a2d38;">
+            <td style="padding:10px 14px;"><span class="dot" style="background:#f44336"></span>In the Red</td>
+            <td style="padding:10px 14px; text-align:right; color:#8b8fa3;">18,183</td>
+            <td style="padding:10px 14px; text-align:right; font-weight:600;">64.8%</td>
+            <td style="padding:10px 14px; text-align:right; font-weight:600;">60.0%</td>
+            <td style="padding:10px 14px; text-align:right; color:#f44336;">-4.8pp</td>
+          </tr>
+        </tbody>
+      </table>
+      <p style="color:#555; font-size:11px; margin-top:12px;">
+        Sorted by Feb retention (highest → lowest). Δ = percentage-point decrease from Feb to Mar.
+      </p>
+    </div>
+  </div>
+
+  <script>
+  (() => {
+    const retCtx = document.getElementById('retention-chart').getContext('2d');
+    const retData = [
+      { persona: 'Tightrope Walkers', color: '#ff9800', jan: 100, feb: 90.4, mar: 81.8 },
+      { persona: 'Roller Coasters',   color: '#42a5f5', jan: 100, feb: 76.4, mar: 70.9 },
+      { persona: 'Payday Surfers',    color: '#ab47bc', jan: 100, feb: 72.1, mar: 65.9 },
+      { persona: 'Steady Savers',     color: '#66bb6a', jan: 100, feb: 68.9, mar: 64.3 },
+      { persona: 'In the Red',        color: '#f44336', jan: 100, feb: 64.8, mar: 60.0 }
+    ];
+    new Chart(retCtx, {
+      type: 'line',
+      data: {
+        labels: ['Jan 2026 (cohort)', 'Feb 2026', 'Mar 2026'],
+        datasets: retData.map(d => ({
+          label: d.persona,
+          data: [d.jan, d.feb, d.mar],
+          borderColor: d.color,
+          backgroundColor: d.color + '22',
+          fill: false,
+          borderWidth: 2.5,
+          pointRadius: 5,
+          pointHoverRadius: 7,
+          tension: 0.15
+        }))
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: {
+            labels: { color: '#8b8fa3', font: { size: 11 }, usePointStyle: true, pointStyle: 'circle' }
+          },
+          tooltip: {
+            backgroundColor: '#22252f', titleColor: '#e4e6eb', bodyColor: '#e4e6eb',
+            borderColor: '#2a2d38', borderWidth: 1,
+            callbacks: {
+              label: item => item.dataset.label + ': ' + item.parsed.y.toFixed(1) + '%'
+            }
+          }
+        },
+        scales: {
+          y: {
+            min: 50, max: 105,
+            title: { display: true, text: 'Retention %', color: '#8b8fa3', font: { size: 11 } },
+            ticks: { color: '#8b8fa3', callback: v => v + '%' },
+            grid: { color: 'rgba(255,255,255,0.04)' }
+          },
+          x: {
+            ticks: { color: '#8b8fa3' },
+            grid: { color: 'rgba(255,255,255,0.04)' }
+          }
+        }
+      }
+    });
+  })();
+  </script>
+</div>
+
+<div style="margin-top:28px; padding:32px; background:#181b24; border:1px solid #2a2d38; border-radius:12px;">
+  <h2 style="font-size:22px; font-weight:700; margin-bottom:20px;">Data Attribution Logic</h2>
+  <div style="margin-bottom:28px;">
+    <h3 style="font-size:16px; font-weight:600; color:#42a5f5; margin-bottom:8px;">Step 0 — Eligible Population</h3>
+    <p style="color:#8b8fa3; font-size:13px; line-height:1.7; margin-bottom:10px;">
+      Start with users who <strong style="color:#e4e6eb">logged in within the last 30 days</strong> (<code style="background:#22252f; padding:2px 6px; border-radius:4px; font-size:12px;">main_prod.dbo.logindetails</code>), then exclude:
+    </p>
+    <ol style="color:#e4e6eb; font-size:13px; line-height:1.9; padding-left:20px;">
+      <li><strong>Dead bank connection</strong> — both <code style="background:#22252f; padding:2px 6px; border-radius:4px; font-size:12px;">is_upbc_active</code> and <code style="background:#22252f; padding:2px 6px; border-radius:4px; font-size:12px;">is_bfpbc_active</code> = false.</li>
+      <li><strong>Stale/dormant balance</strong> — same non-zero value for 10+ consecutive days.</li>
+    </ol>
+  </div>
+  <div style="margin-bottom:28px;">
+    <h3 style="font-size:16px; font-weight:600; color:#42a5f5; margin-bottom:8px;">Step 1 — Cycle Selection for Visualization</h3>
+    <p style="color:#8b8fa3; font-size:13px; line-height:1.7;">
+      For each sampled user, we select the <strong style="color:#e4e6eb">most recent completed cycle that best matches their persona</strong> (not necessarily the latest cycle). Per-cycle persona matching rules:
+    </p>
+    <ul style="color:#e4e6eb; font-size:13px; line-height:1.9; padding-left:20px; margin-top:8px;">
+      <li><strong>In the Red:</strong> days_negative &ge; 2</li>
+      <li><strong>Tightrope Walkers:</strong> median_bal between -$50 and $150 AND &ge;1 cashout</li>
+      <li><strong>Roller Coasters:</strong> std_bal &gt; $300 AND min_bal &lt; $200 AND days_negative &le; 1</li>
+      <li><strong>Payday Surfers:</strong> max_bal &ge; $500 AND min_bal &lt; $50 AND avg_bal between $50–$400</li>
+      <li><strong>Steady Savers:</strong> min_bal &ge; $200</li>
+    </ul>
+  </div>
+  <div style="margin-bottom:28px;">
+    <h3 style="font-size:16px; font-weight:600; color:#42a5f5; margin-bottom:8px;">Step 2 — Classification Rules (Priority Order, across last 5 cycles)</h3>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div style="background:#22252f; border-left:3px solid #f44336; padding:14px 18px; border-radius:0 8px 8px 0;">
+        <div style="font-weight:600; font-size:14px; margin-bottom:4px;"><span style="color:#f44336;">1.</span> In the Red</div>
+        <code style="color:#8b8fa3; font-size:12px;">cycles_2plus_neg &ge; 3 OR cycles_deep_neg &ge; 3</code>
+      </div>
+      <div style="background:#22252f; border-left:3px solid #ff9800; padding:14px 18px; border-radius:0 8px 8px 0;">
+        <div style="font-weight:600; font-size:14px; margin-bottom:4px;"><span style="color:#ff9800;">2.</span> Tightrope Walkers</div>
+        <code style="color:#8b8fa3; font-size:12px;">cycles_tight_median &ge; 3 AND avg_cashouts &ge; 2</code>
+      </div>
+      <div style="background:#22252f; border-left:3px solid #42a5f5; padding:14px 18px; border-radius:0 8px 8px 0;">
+        <div style="font-weight:600; font-size:14px; margin-bottom:4px;"><span style="color:#42a5f5;">3.</span> Roller Coasters</div>
+        <code style="color:#8b8fa3; font-size:12px;">cycles_volatile_dip &ge; 2 AND cycles_any_negative &le; 1</code>
+      </div>
+      <div style="background:#22252f; border-left:3px solid #ab47bc; padding:14px 18px; border-radius:0 8px 8px 0;">
+        <div style="font-weight:600; font-size:14px; margin-bottom:4px;"><span style="color:#ab47bc;">4.</span> Payday Surfers</div>
+        <code style="color:#8b8fa3; font-size:12px;">cycles_surfer &ge; 2 AND cycles_min_above_200 &lt; MIN(4, num_cycles)</code>
+      </div>
+      <div style="background:#22252f; border-left:3px solid #66bb6a; padding:14px 18px; border-radius:0 8px 8px 0;">
+        <div style="font-weight:600; font-size:14px; margin-bottom:4px;"><span style="color:#66bb6a;">5.</span> Steady Savers</div>
+        <code style="color:#8b8fa3; font-size:12px;">cycles_min_above_200 &ge; MIN(4, num_cycles)</code>
+      </div>
+    </div>
+  </div>
+  <div>
+    <h3 style="font-size:16px; font-weight:600; color:#42a5f5; margin-bottom:8px;">Data Sources</h3>
+    <table style="width:100%; border-collapse:collapse; font-size:13px;">
+      <thead>
+        <tr style="border-bottom:2px solid #2a2d38;">
+          <th style="text-align:left; padding:8px 12px; color:#8b8fa3; font-weight:600; font-size:11px; text-transform:uppercase;">Purpose</th>
+          <th style="text-align:left; padding:8px 12px; color:#8b8fa3; font-weight:600; font-size:11px; text-transform:uppercase;">Table</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #2a2d38;"><td style="padding:8px 12px;">Login activity</td><td style="padding:8px 12px; color:#8b8fa3;"><code>main_prod.dbo.logindetails</code></td></tr>
+        <tr style="border-bottom:1px solid #2a2d38;"><td style="padding:8px 12px;">Bank connection</td><td style="padding:8px 12px; color:#8b8fa3;"><code>main_prod.bank_dm.fact_user_bank_connection</code></td></tr>
+        <tr style="border-bottom:1px solid #2a2d38;"><td style="padding:8px 12px;">Daily balance</td><td style="padding:8px 12px; color:#8b8fa3;"><code>main_prod.bank_balance.user_bank_balance</code></td></tr>
+        <tr style="border-bottom:1px solid #2a2d38;"><td style="padding:8px 12px;">Pay periods</td><td style="padding:8px 12px; color:#8b8fa3;"><code>main_prod.earnings.earningscycle</code></td></tr>
+        <tr style="border-bottom:1px solid #2a2d38;"><td style="padding:8px 12px;">Cashouts</td><td style="padding:8px 12px; color:#8b8fa3;"><code>main_prod.finance_dm.fact_transactions_all</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p style="color:#555; font-size:11px; margin-top:20px;">
+    Sizing: 1/32 hash sample &times;32. Classification requires &ge;3 completed pay periods in last 120 days. Visualization shows the most recent cycle matching the persona pattern. Data as of March 2026.
+  </p>
+</div>
+
+</body>
+</html>
